@@ -1,3 +1,13 @@
+# Version 0.2 validation update
+
+The rebuilt layout engine expands building lengths beside a shared drive and sizes parking from each building's unit count. Eleven engine tests passed, covering containment, concave/irregular sites, zoning limits, building growth, parking growth, explicit stall counts, drive/aisle connections, non-overlap, individual edits, all presets, access-approach containment and paving-inclusive open-space budgets.
+
+Chromium checks passed for live site-wide growth without pressing Generate, individual length-slider edits, actual pointer dragging of SVG growth handles, persistence of individually edited plans, irregular sites, plus the prior upload/calibration/tracing/PDF/export/mobile workflows. No browser errors were observed. Production build passed; the same browser workflow also passed against the built production preview, including PDF upload and its worker.
+
+The new rectangular demo defaults produce 147 homes and 222 drawn stalls in the highest-yield orientation. These are concept counts based on the stated assumptions, not approved design capacity. Corridors and unit dividers are schematic. No road turning, curb-cut permission, frontage, ADA, emergency access, drainage or fuel engineering is established. Financials are optional and collapsed.
+
+The notes below describe the original version's validation and should not be read as current layout output.
+
 # Validation evidence
 
 Validated October 10, 2026 in the cloud machine with Node 24.19.0, npm 11.9.0 and system Chromium.

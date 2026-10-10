@@ -1,3 +1,5 @@
+> Version 0.2 update: the initial grid engine has been replaced with adaptive building bars, editable expansion handles, individual drawn stalls and double-loaded aisles connected to a continuous drive. Costs are collapsed by default. The historical capability matrix below describes the original MVP; the current capabilities and limits are in README.md. This remains a concept configurator, not a verified TestFit replacement.
+
 # Build decision for Clutch Industries
 
 **Build a focused Clutch feasibility product with Codex, using existing geometry libraries; keep an off-the-shelf feasibility tool available for parallel validation. Do not attempt all of TestFit in one AI-generated sprint.** A browser MVP can answer rough capacity and basic economics now. A dependable land-acquisition tool needs reviewed geometry, circulation and jurisdiction rules. Hire a geometry/AEC engineer for that stage; do not hire a large agency before proving the workflow on actual Clutch parcels.
