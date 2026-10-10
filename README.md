@@ -1,0 +1,60 @@
+# Clutch SiteFit
+
+A working browser-based feasibility MVP for Clutch Industries: draw or upload a site, calibrate its scale, trace a property boundary, enter constraints, compare layouts, and estimate yield and economics. Local processing; no account, backend, API credentials or paid maps required.
+
+**Recommendation and roadmap:** [docs/BUILD-STRATEGY.md](docs/BUILD-STRATEGY.md). **Input accuracy and imagery rights:** [docs/SITE-INPUT.md](docs/SITE-INPUT.md).
+
+## Run
+
+Requires Node 22.12+ (validated with Node 24.19.0) and npm.
+
+```sh
+git clone https://github.com/ChrisClutch/Testfit.io-beta-.git
+cd Testfit.io-beta-
+npm ci
+npm run dev -- --port 5173 --open
+```
+
+The last command opens the app in your browser. Leave Terminal running. For cloud setup, the existing checkout is `/workspace/Testfit.io-beta-`; use `npm ci --cache /tmp/clutch-npm-cache --no-audit --no-fund` there. Cloud onboarding does not provide a web preview. `npm test` runs geometry and financial checks. With system Chromium installed, run `npm run test:browser` while the dev server is running; set `CHROMIUM_PATH` if its executable is elsewhere. `npm run build` produces `dist/`; `npm run preview -- --port 4173` serves it locally. For Cloudflare Pages: build command `npm run build`, output directory `dist`, Node 24. No Worker required for this MVP. Deploy only when explicitly requested.
+
+## Use
+
+1. Start with the 500 × 400 ft demo or upload a PDF (first page), PNG, JPEG or WEBP. Files stay in the browser; there is no upload server. The project JSON embeds the reference image when saved. Handle survey/project files as sensitive documents.
+2. For an uploaded reference, click **Calibrate**, then two endpoints of a known surveyed dimension or reliable scale bar. Enter its distance in feet. Never infer scale from DPI or a screenshot zoom level.
+3. Click **Trace boundary**, click property corners in sequence, then **Close polygon**. Undo removes the most recent trace point. You can draw without an image, then calibrate that drawn boundary against a known dimension.
+4. Choose a program and enter the parcel's verified zoning constraints. The sample assumptions are not Salem zoning rules. Regenerate after changes.
+5. Compare four grid orientations. Update underwriting assumptions to see NOI, development cost, value, spread, yield on cost and interest-only debt metrics. Save/open project JSON; export a concept SVG or scenario CSV.
+
+## What is implemented
+
+- Manual scale calibration and polygon tracing, PDF rasterization, image references.
+- Inward uniform setbacks, including concave sites and potentially split envelopes.
+- Five program presets: multifamily, townhomes, affordable housing, cottages and a retail/fuel concept.
+- Four deterministic placement orientations; separate building and parking/aisle pads contained inside the setback envelope.
+- Limits on FAR, coverage, density, approximate unbuilt/unpaved area, floors and parking ratio.
+- Net/gross efficiency and average unit area; per-pad rounded parking requirements.
+- Transparent basic rental proforma, optional retail NOI, project persistence and SVG/CSV exports.
+
+## What is not validated
+
+This is a concept estimator, not TestFit parity or an entitlement tool. No connected driveway network, street frontage/curb cuts, ADA spaces, fire turning, setbacks by edge, easements, detention, topography, actual unit floorplans, unit mix, automatic GIS ingestion, automatic zoning, 3D, DXF/Revit export or collaboration. The fuel preset places a store and parking pad; it does **not** design fuel islands, tanker access, tanks, canopy, hazardous-material separation or circulation. Its annual NOI must come from separate business underwriting.
+
+A cottage preset uses one home per pad; maximum density and a grid do not establish compliance with Oregon cottage-cluster provisions. Affordable housing uses a smaller unit assumption; subsidy, AMI rent limits, operating restrictions and tax-credit finance are not modeled. Townhomes are estimated from gross area, not individually compliant lots.
+
+Setback buffering uses a small local coordinate-to-geographic conversion around the equator and Turf's spherical buffer. Appropriate for concept-scale sites, not survey precision or large/regional coordinates. Tracing accepts simple exterior rings only; holes and easements need a later GIS workflow. Nonadjacent touching/crossing edges are rejected. Large sites have a search guard. PDFs over 20 MB are rejected; PDFs render their first page to at most 2400 px on the longest side. Images must be under 20 MB and 40 megapixels.
+
+Grid layouts are conservative: large parking blocks can leave usable land empty, and a different orientation may have no feasible pads. Pads do not overlap one another, but access connectivity is not established. Unbuilt/unpaved percentage is an area budget, not verified landscaped or recreational open space. Siteworks, roads, stormwater, utilities and required nonbuildable polygons need explicit modeling before land acquisition decisions.
+
+## Underwriting
+
+- Gross building area = footprint × floors. Units = floor(gross area × net/gross efficiency ÷ average unit size), except cottages use one home and retail uses zero homes.
+- Hard cost = gross building area × $/sf + parking/aisle pad area × $12/sf.
+- Total development cost = land + hard cost × (1 + soft-cost percentage + contingency percentage).
+- Residential NOI = units × monthly rent × 12 × (1 − vacancy) × (1 − operating-expense ratio).
+- Retail NOI is the entered assumption, only when a store fits. No income if nothing fits.
+- Value = NOI / exit cap rate. Spread = value − cost, before sale expenses and tax.
+- Debt = cost × loan percentage; annual debt service = debt × interest rate (interest-only). Cash-on-cash uses NOI less this debt service divided by equity.
+
+## Validation
+
+Node tests exercise measured setback/area, concave-site containment, density/FAR/coverage limits, invalid boundaries, unusable envelopes, parking counts and known proforma arithmetic. Production build and Chromium functional checks are also run during onboarding; see `docs/VALIDATION.md` for actual outcomes. No live municipal or product research was verified because external research hosts were blocked by the egress proxy.
