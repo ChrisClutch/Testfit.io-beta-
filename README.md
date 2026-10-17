@@ -1,4 +1,6 @@
-# Clutch RE Development Feasibility
+# Clutch PropDev.io
+
+**Version 0.3 feature branch:** explicit residential types, net-square-footage-driven footprints, responsive parking, optional detention/green-space reservations, editable boundary vertices and WGS84 parcel import. [Changes and review workflow](docs/PROPDEV-V03.md). [Current validation](docs/VALIDATION-V03.md).
 
 A working browser-based feasibility MVP for Clutch Industries: draw or upload a site, calibrate its scale, trace a property boundary, enter constraints, expand buildings and their connected parking lots, and see live yield. Financial assumptions are optional and collapsed. Local processing; no account, backend, API credentials or paid maps required.
 
@@ -29,7 +31,7 @@ The last command opens the app in your browser. Leave Terminal running. For clou
 
 - Manual scale calibration and polygon tracing, PDF rasterization, image references.
 - Inward uniform setbacks, including concave sites and potentially split envelopes.
-- Five program presets: multifamily, townhomes, affordable housing, cottages and a retail/fuel concept.
+- Legacy program presets (retained alongside the new explicit residential presets): multifamily, townhomes, affordable housing, cottages and a retail/fuel concept.
 - Four access-spine orientations; adaptive building lengths, individual drag/slider editing and a site-wide expansion control.
 - Double-loaded parking lots with individual stall footprints, optional car symbols and aisles meeting a continuous access spine.
 - Rectangular and irregular demo sites, schematic corridors/unit divisions and dimension labels.
@@ -39,7 +41,7 @@ The last command opens the app in your browser. Leave Terminal running. For clou
 
 ## What is not validated
 
-This is a concept estimator, not TestFit parity or an entitlement tool. A straight shared drive connects lot aisles geometrically, but street frontage/curb-cut permission, turning movements, ADA spaces, fire turning, setbacks by edge, easements, detention, topography, actual unit floorplans, unit mix, automatic GIS ingestion, automatic zoning, 3D, DXF/Revit export or collaboration. The fuel preset places a store and parking pad; it does **not** design fuel islands, tanker access, tanks, canopy, hazardous-material separation or circulation. Its annual NOI must come from separate business underwriting.
+This is a concept estimator, not TestFit parity or an entitlement tool. A straight shared drive connects lot aisles geometrically, but street frontage/curb-cut permission, turning movements, ADA spaces, fire turning, setbacks by edge, easements, hydraulic detention design, topography, actual unit floorplans, unit mix, automatic GIS ingestion, automatic zoning, 3D, DXF/Revit export or collaboration. The fuel preset places a store and parking pad; it does **not** design fuel islands, tanker access, tanks, canopy, hazardous-material separation or circulation. Its annual NOI must come from separate business underwriting.
 
 A cottage preset uses one home per pad; maximum density and a grid do not establish compliance with Oregon cottage-cluster provisions. Affordable housing uses a smaller unit assumption; subsidy, AMI rent limits, operating restrictions and tax-credit finance are not modeled. Townhomes are estimated from gross area, not individually compliant lots.
 
@@ -59,4 +61,4 @@ Layouts use adaptive bars beside a straight access spine. Buildings and parking 
 
 ## Validation
 
-Node tests exercise measured setback/area, concave-site containment, density/FAR/coverage limits, invalid boundaries, unusable envelopes, parking counts and known proforma arithmetic. Production build and Chromium functional checks are also run during onboarding; see `docs/VALIDATION.md` for actual outcomes. Version 2 project files preserve individual building-length edits; version 1 files still load with defaults for the new controls. No live municipal or product research was verified because external research hosts were blocked by the egress proxy.
+Node tests exercise measured setback/area, concave-site containment, density/FAR/coverage limits, invalid boundaries, unusable envelopes, parking counts and known proforma arithmetic. Production build and Chromium functional checks are also run during onboarding; see `docs/VALIDATION.md` for actual outcomes. Version 2 project files preserve individual building-length edits; version 1 files still load with defaults for the new controls. The v0.3 tests and results are listed separately in docs/VALIDATION-V03.md. No live municipal or product research was verified because external research hosts were blocked by the egress proxy.
