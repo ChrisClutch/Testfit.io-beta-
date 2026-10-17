@@ -62,3 +62,5 @@ Layouts use adaptive bars beside a straight access spine. Buildings and parking 
 ## Validation
 
 Node tests exercise measured setback/area, concave-site containment, density/FAR/coverage limits, invalid boundaries, unusable envelopes, parking counts and known proforma arithmetic. Production build and Chromium functional checks are also run during onboarding; see `docs/VALIDATION.md` for actual outcomes. Version 2 project files preserve individual building-length edits; version 1 files still load with defaults for the new controls. The v0.3 tests and results are listed separately in docs/VALIDATION-V03.md. No live municipal or product research was verified because external research hosts were blocked by the egress proxy.
+
+Interactive editing v0.5: see [controls, stormwater assumptions and validation](docs/INTERACTIVE-EDITING-V05.md). Select buildings, parking modules, detention or landscape areas on the plan to move/resize/rotate. Enable **Edit individual stalls** for stall placement. **Find parking fit** tests bounded placement candidates and displays access/count warnings.
