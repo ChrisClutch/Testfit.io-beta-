@@ -906,3 +906,42 @@ function discreteLayout(site, c, model, edits) {
   }
   return result;
 }
+
+// Direct edits preserve unit count; validate final geometry rather than claiming a new solve.
+export function applyFootprints(layout, input, transforms = {}) {
+  const c = config(input), next = structuredClone(layout);
+  if (!transforms || typeof transforms !== 'object' || Array.isArray(transforms)) throw Error('Invalid footprint edits.');
+  for (const [id, t] of Object.entries(transforms)) {
+    const i = next.buildingDetails.findIndex(d => d.id === id);
+    if (i < 0) throw Error('Edited building is no longer in this configuration.');
+    if (!t || !Array.isArray(t.center) || t.center.length !== 2 ||
+      ![...t.center,t.length,t.depth,t.degrees].every(Number.isFinite) ||
+      t.center.some(v => Math.abs(v)>100000) || t.length<8 || t.depth<8 ||
+      t.length>1000 || t.depth>1000 || Math.abs(t.degrees)>360)
+      throw Error('Use finite dimensions from 8–1,000 ft and rotation from −360° to 360°.');
+    const d = next.buildingDetails[i], a = t.degrees * Math.PI / 180;
+    const center = rotate(t.center,-a), origin = [center[0]-t.length/2,center[1]-t.depth/2];
+    next.buildings[i] = worldRing(rect(...origin,t.length,t.depth),a);
+    Object.assign(d, {length:t.length,depth:t.depth,center:[...t.center],origin,degrees:t.degrees,
+      corridor:null,handle:rotate([origin[0]+t.length,center[1]],a),
+      netArea:t.length*t.depth*d.floors*c.efficiency});
+  }
+  for (let i=0;i<next.buildings.length;i++) {
+    const b = next.buildings[i];
+    if (!fits(b,next.envelope)) throw Error('Footprint must stay inside setbacks and outside reserved land.');
+    const obstacles = [...next.buildings.slice(i+1),...next.parking,...next.roads,...(next.entry?[next.entry]:[])];
+    if (obstacles.some(p => multiArea(clipping.intersection([[b]],[[p]]))>.01))
+      throw Error('Footprint overlaps another building, parking or access road. Previous position retained.');
+  }
+  const footprint = next.buildings.reduce((sum,b)=>sum+area(b),0);
+  next.gfa = next.buildings.reduce((sum,b,i)=>sum+area(b)*next.buildingDetails[i].floors,0);
+  next.coverage = footprint/next.siteArea*100;
+  if(next.coverage>c.maxCoverage+1e-6 || next.gfa>next.siteArea*c.maxFar+.01 ||
+    footprint+next.pavedArea>next.siteArea*(1-c.openSpace/100)+.01)
+    throw Error('Footprint exceeds coverage, FAR or minimum unbuilt/unpaved assumptions.');
+  next.manualTransforms = structuredClone(transforms);
+  return next;
+}
+export function editFootprint(layout,input,id,transform) {
+  return applyFootprints(layout,input,{...layout.manualTransforms,[id]:transform});
+}

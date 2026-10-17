@@ -8,6 +8,8 @@ import {
   proforma,
   validBoundary,
   config,
+  editFootprint,
+  applyFootprints,
 } from "./engine.js";
 import { importParcelGeoJSON } from "./site-input.js";
 const $ = (s) => document.querySelector(s),
@@ -38,13 +40,13 @@ let state = {
   locked: true,
 };
 $("#app").innerHTML =
-  `<header><div class="brand">Clutch <span>◆</span> PropDev.io <small>PROPERTY DEVELOPMENT STUDIO</small></div><div class="status">● LOCAL & PRIVATE <span>Live configurator · v0.3</span></div></header><main><section class="intro"><div><div class="eyebrow">LAND DECISIONS, WITH THE MATH VISIBLE</div><h1>Shape the site. Grow the plan.</h1><p>Choose your homes. Reserve the land. Watch the plan and parking respond.</p></div><div class="actions"><button id="demo">Rectangular site</button><button id="irregular">Irregular site</button><button id="save">Save project</button><label class="button">Open project<input id="open" type="file" accept=".json" hidden></label></div></section><div class="workspace"><aside><div class="section-title"><span>01</span> SITE & PROGRAM</div><label class="upload">↑ Upload survey or site image<input id="upload" type="file" accept="image/png,image/jpeg,image/webp,application/pdf" hidden><small>PDF first page · PNG · JPG · WEBP</small></label><p id="file-status" class="hint">Demo: 500 × 400 ft · 4.59 acres</p><div class="toolbar"><button id="calibrate">Calibrate</button><button id="trace">Trace boundary</button><button id="close">Close polygon</button><button id="undo">Undo point</button></div><label class="button parcel-upload">Import parcel GeoJSON<input id="parcel-upload" type="file" accept=".geojson,.json,application/geo+json" hidden></label><p id="boundary-source" class="hint">Demo rectangle · not a real property</p><div class="toolbar"><button id="edit-boundary">Edit boundary vertices</button><button id="cancel-edit">Cancel drawing</button></div><div id="vertex-editor"></div><p class="hint">GeoJSON: one WGS84 parcel polygon; coordinates are projected approximately into local feet. Image boundaries are never inferred automatically.</p><p class="hint">Upload → click two known points → enter distance in feet → trace the property corners → close polygon. Imagery never establishes survey accuracy.</p><label>Building type<select id="type">${Object.entries(
+  `<header><div class="brand">Clutch <span>◆</span> PropDev.io <small>PROPERTY DEVELOPMENT STUDIO</small></div><div class="status">● LOCAL & PRIVATE <span>Live configurator · v0.4 local</span></div></header><main><section class="intro"><div><div class="eyebrow">LAND DECISIONS, WITH THE MATH VISIBLE</div><h1>Shape the site. Grow the plan.</h1><p>Choose your homes. Reserve the land. Watch the plan and parking respond.</p></div><div class="actions"><button id="demo">Rectangular site</button><button id="irregular">Irregular site</button><button id="save">Save project</button><label class="button">Open project<input id="open" type="file" accept=".json" hidden></label></div></section><div class="workspace"><aside><div class="section-title"><span>01</span> SITE & PROGRAM</div><label class="upload">↑ Upload survey or site image<input id="upload" type="file" accept="image/png,image/jpeg,image/webp,application/pdf" hidden><small>PDF first page · PNG · JPG · WEBP · or paste an image</small></label><p id="file-status" class="hint">Demo: 500 × 400 ft · 4.59 acres</p><div class="toolbar"><button id="calibrate">Calibrate</button><button id="trace">Trace boundary</button><button id="close">Close polygon</button><button id="undo">Undo point</button></div><label class="button parcel-upload">Import parcel GeoJSON<input id="parcel-upload" type="file" accept=".geojson,.json,application/geo+json" hidden></label><p id="boundary-source" class="hint">Demo rectangle · not a real property</p><div class="toolbar"><button id="edit-boundary">Drag property corners</button><button id="cancel-edit">Cancel drawing</button></div><p id="boundary-measurements" class="hint" aria-live="polite"></p><div id="vertex-editor"></div><p class="hint">GeoJSON: one WGS84 parcel polygon; coordinates are projected approximately into local feet. Image boundaries are never inferred automatically.</p><p class="hint">Upload → click two known points → enter distance in feet → trace the property corners → close polygon. Imagery never establishes survey accuracy.</p><label>Building type<select id="type">${Object.entries(
     TYPES,
   )
     .map(([k, v]) => `<option value="${k}">${v.label}</option>`)
     .join(
       "",
-    )}</select></label><label>Square-footage basis<select id="areaBasis"><option value="home">Per home (net sf)</option><option value="building">Entire building (net sf)</option></select></label>${field("unitSize", "Target area · net sq ft", 850, 100)}<div id="program-description" class="hint"></div><div class="grid-fields">${field("homesPerBuilding", "Homes per townhome building", 6, 1, 24)}${field("setback", "Uniform setback · ft", 15)}${field("floors", "Floors", 3, 1, 6)}${field("parkingRatio", "Stalls / unit", 1.5, 0, 10, 0.1)}${field("maxCoverage", "Max lot coverage · %", 40, 0, 100)}${field("maxFar", "Max FAR", 1.5, 0, 20, 0.1)}${field("maxDensity", "Max units / acre", 40, 0, 1000)}${field("openSpace", "Min unbuilt/unpaved · %", 20, 0, 100)}${field("efficiency", "Net / gross efficiency", 0.82, 0.1, 1, 0.01)}</div><section class="land-reserves"><h3>Land reservations</h3><p class="hint">Zero = optional area off. Targets reserve explicit land, separate from the unbuilt/unpaved percentage. Detention footprint is not a hydraulic design.</p><div class="grid-fields">${field("detentionSqft", "Detention target · sq ft", 0)}${field("greenSpaceSqft", "Green-space target · sq ft", 0)}</div><div class="toolbar"><button id="draw-green">Draw green space</button><button id="draw-detention">Draw detention</button></div><div id="reserve-list"></div></section><button class="primary" id="generate">Generate site options <span>↗</span></button><p class="hint">Inputs are assumptions, not Salem zoning defaults. Confirm the parcel’s adopted rules, overlays and allowed uses.</p></aside><section class="board"><div class="board-top"><div><div class="eyebrow">SITE WORKSPACE</div><h2 id="site-title">Clutch demo parcel</h2></div><span id="area-tag" class="pill">4.59 AC</span></div><div class="canvas-tools"><span>Flexible bars: drag to grow · Presets: change area or building count</span><label><input type="checkbox" id="show-cars" checked> Show cars</label></div><div class="canvas-wrap"><svg id="canvas" viewBox="0 0 700 540" role="img" aria-label="Site boundary and generated layouts"></svg><div class="legend"><span class="boundary">Property</span><span class="envelope">Setback envelope</span><span class="building">Building</span><span class="parking">Parking stalls</span><span class="drive">Connected drive</span><span class="green-key">Green space</span><span class="detention-key">Detention</span></div></div><div id="message" role="status">Demo site is scaled in feet. Generate options to begin.</div><div id="options" class="options"></div><div class="board-foot"><span>CONCEPT GEOMETRY · NOT A PERMIT PLAN</span><button id="export-svg">Export SVG</button><button id="export-csv">Export CSV</button></div></section><aside class="finance"><div class="section-title"><span>02</span> FEASIBILITY SNAPSHOT</div><div id="metrics" class="metrics"></div><div class="section-title"><span>03</span> BUILDING & PARKING GROWTH</div><label>Site-wide expansion / building count <div class="range-header"><span>Compact</span><output id="growth-output">100%</output><span>Fill available length</span></div><input id="growth" type="range" min="20" max="100" value="100" step="1"></label><div class="grid-fields">${field("buildingDepth", "Building depth · ft", 60, 20, 150)}${field("maxLength", "Length limit · ft", 360, 36, 1000, 3)}${field("stallWidth", "Stall width · ft", 9, 8, 12, 0.5)}${field("stallDepth", "Stall depth · ft", 18, 16, 24)}${field("aisleWidth", "Drive / aisle · ft", 24, 20, 36)}</div><div id="building-editor" class="building-editor"></div><p class="hint">Growth stops at the setback, parking capacity or a zoning limit. Parking lots grow with the homes they serve. Select a building to resize it individually.</p><details class="underwriting"><summary>Financial assumptions & proforma</summary><h3>Underwriting assumptions</h3><div class="grid-fields">${field("land", "Land acquisition · $", 600000)}${field("hardCost", "Building hard cost · $/sf", 210)}${field("softPct", "Soft costs · % hard", 20, 0, 100)}${field("contingencyPct", "Contingency · % hard", 8, 0, 100)}${field("rent", "Monthly rent / unit · $", 1800)}${field("vacancyPct", "Vacancy · %", 5, 0, 100)}${field("opexPct", "Operating expense · %", 35, 0, 100)}${field("capRate", "Exit cap · %", 5.5, 0.1, 30, 0.1)}${field("loanPct", "Debt / total cost · %", 65, 0, 100)}${field("interestPct", "Interest-only rate · %", 7, 0, 30, 0.1)}${field("annualRetailNoi", "Retail / fuel annual NOI · $", 150000)}</div><div id="financials"></div><p class="hint">Concept estimate. Includes parking paving at $12/sf; excludes demolition, abnormal sitework, offsite improvements, financing fees, taxes at sale and fuel equipment. Affordable rents and subsidies require explicit underwriting. Debt service is interest-only.</p></details></aside></div><section class="limitations"><strong>Decision support, with limits.</strong> Flexible bars expand and residential presets repeat along a shared access spine. Reserved green/detention polygons exclude development; detention volume, infiltration, discharge, and landscape compliance are not calculated. Each counted stall is drawn and each parking aisle meets the spine. Street frontage, curb-cut permission, fire turning, ADA, grading, utilities, stormwater, easements and fuel safety separations remain unvalidated. Interior lines are schematic, not unit floorplans. Unbuilt area is not verified landscaped open space. No automated zoning or entitlement approval.</section></main>`;
+    )}</select></label><label>Square-footage basis<select id="areaBasis"><option value="home">Per home (net sf)</option><option value="building">Entire building (net sf)</option></select></label>${field("unitSize", "Target area · net sq ft", 850, 100)}<div id="program-description" class="hint"></div><div class="grid-fields">${field("homesPerBuilding", "Homes per townhome building", 6, 1, 24)}${field("setback", "Uniform setback · ft", 15)}${field("floors", "Floors", 3, 1, 6)}${field("parkingRatio", "Stalls / unit", 1.5, 0, 10, 0.1)}${field("maxCoverage", "Max lot coverage · %", 40, 0, 100)}${field("maxFar", "Max FAR", 1.5, 0, 20, 0.1)}${field("maxDensity", "Max units / acre", 40, 0, 1000)}${field("openSpace", "Min unbuilt/unpaved · %", 20, 0, 100)}${field("efficiency", "Net / gross efficiency", 0.82, 0.1, 1, 0.01)}</div><section class="land-reserves"><h3>Land reservations</h3><p class="hint">Zero = optional area off. Targets reserve explicit land, separate from the unbuilt/unpaved percentage. Detention footprint is not a hydraulic design.</p><div class="grid-fields">${field("detentionSqft", "Detention target · sq ft", 0)}${field("greenSpaceSqft", "Green-space target · sq ft", 0)}</div><div class="toolbar"><button id="draw-green">Draw green space</button><button id="draw-detention">Draw detention</button></div><div id="reserve-list"></div></section><button class="primary" id="generate">Generate site options <span>↗</span></button><p class="hint">Inputs are assumptions, not Salem zoning defaults. Confirm the parcel’s adopted rules, overlays and allowed uses.</p></aside><section class="board"><div class="board-top"><div><div class="eyebrow">SITE WORKSPACE</div><h2 id="site-title">Clutch demo parcel</h2></div><span id="area-tag" class="pill">4.59 AC</span></div><div class="canvas-tools"><button id="board-boundary">Drag property corners</button><span>Drag buildings to move</span><label><input type="checkbox" id="show-cars" checked> Show cars</label></div><div class="canvas-wrap"><svg id="canvas" viewBox="0 0 700 540" role="img" aria-label="Site boundary and generated layouts"></svg><div class="legend"><span class="boundary">Property</span><span class="envelope">Setback envelope</span><span class="building">Building</span><span class="parking">Parking stalls</span><span class="drive">Connected drive</span><span class="green-key">Green space</span><span class="detention-key">Detention</span></div></div><div id="message" role="status">Demo site is scaled in feet. Generate options to begin.</div><div id="options" class="options"></div><div class="board-foot"><span>CONCEPT GEOMETRY · NOT A PERMIT PLAN</span><button id="export-svg">Export SVG</button><button id="export-csv">Export CSV</button></div></section><aside class="finance"><div class="section-title"><span>02</span> FEASIBILITY SNAPSHOT</div><div id="metrics" class="metrics"></div><div class="section-title"><span>03</span> BUILDING & PARKING GROWTH</div><label>Site-wide expansion / building count <div class="range-header"><span>Compact</span><output id="growth-output">100%</output><span>Fill available length</span></div><input id="growth" type="range" min="20" max="100" value="100" step="1"></label><div class="grid-fields">${field("buildingDepth", "Building depth · ft", 60, 20, 150)}${field("maxLength", "Length limit · ft", 360, 36, 1000, 3)}${field("stallWidth", "Stall width · ft", 9, 8, 12, 0.5)}${field("stallDepth", "Stall depth · ft", 18, 16, 24)}${field("aisleWidth", "Drive / aisle · ft", 24, 20, 36)}</div><div id="building-editor" class="building-editor"></div><p class="hint">Growth stops at the setback, parking capacity or a zoning limit. Parking lots grow with the homes they serve. Select a building to resize it individually.</p><details class="underwriting"><summary>Financial assumptions & proforma</summary><h3>Underwriting assumptions</h3><div class="grid-fields">${field("land", "Land acquisition · $", 600000)}${field("hardCost", "Building hard cost · $/sf", 210)}${field("softPct", "Soft costs · % hard", 20, 0, 100)}${field("contingencyPct", "Contingency · % hard", 8, 0, 100)}${field("rent", "Monthly rent / unit · $", 1800)}${field("vacancyPct", "Vacancy · %", 5, 0, 100)}${field("opexPct", "Operating expense · %", 35, 0, 100)}${field("capRate", "Exit cap · %", 5.5, 0.1, 30, 0.1)}${field("loanPct", "Debt / total cost · %", 65, 0, 100)}${field("interestPct", "Interest-only rate · %", 7, 0, 30, 0.1)}${field("annualRetailNoi", "Retail / fuel annual NOI · $", 150000)}</div><div id="financials"></div><p class="hint">Concept estimate. Includes parking paving at $12/sf; excludes demolition, abnormal sitework, offsite improvements, financing fees, taxes at sale and fuel equipment. Affordable rents and subsidies require explicit underwriting. Debt service is interest-only.</p></details></aside></div><section class="limitations"><strong>Decision support, with limits.</strong> Flexible bars expand and residential presets repeat along a shared access spine. Reserved green/detention polygons exclude development; detention volume, infiltration, discharge, and landscape compliance are not calculated. Each counted stall is drawn and each parking aisle meets the spine. Street frontage, curb-cut permission, fire turning, ADA, grading, utilities, stormwater, easements and fuel safety separations remain unvalidated. Interior lines are schematic, not unit floorplans. Unbuilt area is not verified landscaped open space. No automated zoning or entitlement approval.</section></main>`;
 function field(id, label, value, min = 0, max = 1e12, step = 1) {
   return `<label>${label}<input id="${id}" type="number" value="${value}" min="${min}" max="${max}" step="${step}"></label>`;
 }
@@ -122,6 +124,7 @@ function poly(points, cls) {
   return `<polygon points="${points.map((p) => p.join(",")).join(" ")}" class="${cls}"/>`;
 }
 function draw() {
+  $("#board-boundary").textContent = state.mode === "vertices" ? "Done editing corners" : "Drag property corners";
   const box = drag?.vertex !== undefined ? drag.box : bounds(),
     svg = $("#canvas");
   svg.setAttribute("viewBox", box.join(" "));
@@ -183,7 +186,7 @@ function draw() {
         selected = state.selectedBuilding === d.id;
       html += `<g data-building="${i}" class="building-group">${poly(p, selected ? "building-pad selected-building" : "building-pad")}`;
       if (d.corridor) html += poly(d.corridor, "corridor");
-      const angle = (l.degrees * Math.PI) / 180,
+      const angle = ((d.degrees ?? l.degrees) * Math.PI) / 180,
         project = ([x, y]) => [
           x * Math.cos(angle) - y * Math.sin(angle),
           x * Math.sin(angle) + y * Math.cos(angle),
@@ -203,7 +206,7 @@ function draw() {
         html += `<path d="M${project([bx + 2, by + 2])}L${project([bx + d.length / 2, by + 6])}L${project([bx + d.length - 2, by + 2])}M${project([bx + d.length / 2, by + 6])}L${project([bx + d.length / 2, by + d.depth - 3])}" class="unit-line"/>`;
       }
       html += `<title>Building ${i + 1}: ${d.units} homes, ${d.floors} stories, ${Math.round(area(p) * d.floors)} gross sf</title><text x="${d.center[0]}" y="${d.center[1]}" class="building-label">${compact ? `B${i + 1}` : $("#type").value === "fuel" ? "STORE" : `B${i + 1} · ${d.units} HOMES`}</text>${compact ? "" : `<text x="${d.center[0]}" y="${d.center[1] + 9}" class="dimension-label">${Number(d.length.toFixed(1))}′ × ${d.depth}′ · ${d.floors} FLOORS</text>`}</g>`;
-      if (selected && !d.fixed)
+      if (selected && !d.fixed && !l.manualTransforms?.[d.id])
         html += `<circle cx="${d.handle[0]}" cy="${d.handle[1]}" r="${box[2] / 90}" class="resize-handle" data-resize="${i}"/><text x="${d.handle[0]}" y="${d.handle[1] - box[2] / 55}" class="resize-label">DRAG TO GROW</text>`;
     });
     if (l.roads.length) {
@@ -215,6 +218,17 @@ function draw() {
       html += `<text x="${p[0]}" y="${p[1] - 6}" class="entry-label">PROPOSED ACCESS</text>`;
     }
   }
+  const perimeter = state.site.reduce((sum, p, i) => {
+    const q = state.site[(i + 1) % state.site.length];
+    return sum + Math.hypot(q[0] - p[0], q[1] - p[1]);
+  }, 0);
+  $("#boundary-measurements").textContent = state.site.length
+    ? `${Math.round(area(state.site)).toLocaleString()} sq ft · ${(area(state.site) / 43560).toFixed(2)} acres · ${perimeter.toFixed(1)} ft perimeter · ${state.locked ? "verify estimated dimensions" : "UNSCALED: calibrate first"}` : "Paste/upload a reference, calibrate, then trace its outline.";
+  if (state.mode === "vertices")
+    state.site.forEach((p, i) => {
+      const q = state.site[(i + 1) % state.site.length];
+      html += `<text x="${(p[0]+q[0])/2}" y="${(p[1]+q[1])/2-5}" text-anchor="middle" class="edge-measurement">${Math.hypot(q[0]-p[0],q[1]-p[1]).toFixed(1)} ft</text>`;
+    });
   if (state.mode === "vertices")
     state.site.forEach((p, i) => {
       html += `<circle cx="${p[0]}" cy="${p[1]}" r="${box[2] / 110}" class="boundary-handle" data-vertex="${i}"/><text x="${p[0] + box[2] / 90}" y="${p[1]}" class="reserve-label">${i + 1}</text>`;
@@ -239,17 +253,24 @@ function editor() {
     : '<p class="hint">Select a green building to resize it.</p>';
   if (d?.fixed)
     $("#building-editor").innerHTML =
-      `<div class="editor-title">${TYPES[$("#type").value].label}<span>${d.units} HOMES</span></div><p>${Math.round(d.netArea).toLocaleString()} net sf · ${Math.round(area(l.buildings[i]) * d.floors).toLocaleString()} gross sf</p><p class="hint">${Number(d.length.toFixed(1))}′ × ${d.depth}′ · ${d.floors} stories. Change target area or depth to resize this preset. Site expansion adds or removes whole buildings.</p><button id="remove-module">Remove this building</button>`;
+      `<div class="editor-title">${TYPES[$("#type").value].label}<span>${d.units} HOMES</span></div><p>${Math.round(d.netArea).toLocaleString()} net sf · ${Math.round(area(l.buildings[i]) * d.floors).toLocaleString()} gross sf</p><p class="hint">${Number(d.length.toFixed(1))}′ × ${d.depth}′ · ${d.floors} stories. Use the footprint fields below to resize this building. Site-wide inputs regenerate the entire configuration.</p><button id="remove-module">Remove this building</button>`;
+  if (d) {
+    $("#building-editor").insertAdjacentHTML("beforeend", `<div class="grid-fields">${field("footprint-length", "Footprint length · ft", Number(d.length.toFixed(3)), 8, 1000, .1)}${field("footprint-depth", "Footprint depth · ft", Number(d.depth.toFixed(3)), 8, 1000, .1)}${field("footprint-angle", "Rotation · degrees", d.degrees ?? l.degrees, -360, 360, 1)}</div><button id="apply-footprint">Apply footprint</button><p class="hint">Drag a building to move. Exact edits retain home count and stories; square footage changes. Roads/parking stay fixed. Regeneration resets manual edits.</p>`);
+    $("#apply-footprint").onclick = () => manualEdit(d.id, {
+      center: d.center, length: Number($("#footprint-length").value),
+      depth: Number($("#footprint-depth").value), degrees: Number($("#footprint-angle").value)
+    });
+  }
   const remove = $("#remove-module");
   if (remove)
     remove.onclick = () => {
       const current = state.layouts[state.selected];
-      state.layouts[state.selected] = reconfigure(
-        state.site,
-        program(),
-        current.model,
-        { ...current.edits, [d.id]: 0 },
-      );
+      try {
+        const next = reconfigure(state.site, program(), current.model, { ...current.edits, [d.id]: 0 });
+        const transforms = { ...current.manualTransforms };
+        delete transforms[d.id];
+        state.layouts[state.selected] = applyFootprints(next, program(), transforms);
+      } catch (e) { message(e.message); return; }
       state.selectedBuilding = null;
       draw();
       editor();
@@ -264,6 +285,15 @@ function editor() {
   const restore = $("#restore-building");
   if (restore) restore.onclick = () => resizeBuilding(d.id, d.maxLength);
 }
+function manualEdit(id, transform, refresh = true) {
+  try {
+    state.layouts[state.selected] = editFootprint(state.layouts[state.selected], program(), id, transform);
+    draw(); updateFinance(); options();
+    if (refresh) editor();
+    message("Footprint updated. Home count retained; square footage recalculated. Parking and roads unchanged.");
+    return true;
+  } catch (e) { message(e.message); return false; }
+}
 function options() {
   $("#options").innerHTML = state.layouts
     .map(
@@ -277,7 +307,10 @@ function resizeBuilding(id, length) {
   if (!current) return;
   try {
     const edits = { ...current.edits, [id]: length };
-    const next = reconfigure(state.site, program(), current.model, edits);
+    let next = reconfigure(state.site, program(), current.model, edits);
+    const transforms = { ...current.manualTransforms };
+    delete transforms[id];
+    next = applyFootprints(next, program(), transforms);
     if (!next.buildingDetails.some((d) => d.id === id)) return;
     state.layouts[state.selected] = next;
     draw();
@@ -430,6 +463,15 @@ $("#canvas").onpointerdown = (e) => {
     return;
   }
   const handle = e.target.closest("[data-resize]");
+  const building = e.target.closest("[data-building]");
+  if (!handle && building && state.mode === "select") {
+    const l = state.layouts[state.selected], d = l.buildingDetails[Number(building.dataset.building)];
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform($("#canvas").getScreenCTM().inverse());
+    state.selectedBuilding = d.id;
+    drag = { moveId: d.id, start: [p.x,p.y], detail: structuredClone(d), originalLayout: structuredClone(l) };
+    $("#canvas").setPointerCapture(e.pointerId);
+    draw(); editor(); e.preventDefault(); return;
+  }
   if (!handle || state.mode !== "select") return;
   const l = state.layouts[state.selected],
     d = l.buildingDetails[Number(handle.dataset.resize)];
@@ -452,7 +494,15 @@ $("#canvas").onpointermove = (e) => {
   if (drag.vertex !== undefined) {
     state.site[drag.vertex] = [p.x, p.y];
     state.layouts = [];
+    updateFinance();
+    editor();
     draw();
+    return;
+  }
+  if (drag.moveId) {
+    const d = drag.detail;
+    manualEdit(d.id, {center: [d.center[0]+p.x-drag.start[0], d.center[1]+p.y-drag.start[1]], length: d.length, depth: d.depth, degrees: d.degrees ?? drag.originalLayout.degrees}, false);
+    suppressClick = true;
     return;
   }
   const localX = p.x * Math.cos(drag.angle) + p.y * Math.sin(drag.angle);
@@ -482,6 +532,7 @@ $("#canvas").onpointerup = (e) => {
   setTimeout(() => (suppressClick = false), 0);
 };
 $("#canvas").onpointercancel = () => {
+  if (drag?.moveId) { state.layouts[state.selected] = drag.originalLayout; draw(); updateFinance(); }
   if (drag?.vertex !== undefined) {
     state.site = drag.original;
     run();
@@ -589,8 +640,7 @@ $("#canvas").onclick = (e) => {
     draw();
   }
 };
-$("#upload").onchange = async (e) => {
-  let file = e.target.files[0];
+async function loadReference(file) {
   if (!file) return;
   if (file.size > 20 * 1024 * 1024) {
     message("Use a file under 20 MB.");
@@ -657,8 +707,18 @@ $("#upload").onchange = async (e) => {
   } catch (err) {
     message("Upload failed: " + err.message);
   }
+}
+$("#upload").onchange = async (e) => {
+  await loadReference(e.target.files[0]);
   e.target.value = "";
 };
+document.addEventListener("paste", async (e) => {
+  if (e.target.closest?.("input, textarea, [contenteditable=true]")) return;
+  const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith("image/"));
+  if (!item) return;
+  e.preventDefault();
+  await loadReference(item.getAsFile());
+});
 function download(name, data, type) {
   let url = URL.createObjectURL(new Blob([data], { type }));
   let a = document.createElement("a");
@@ -679,6 +739,7 @@ $("#save").onclick = () =>
           ? {
               model: state.layouts[state.selected].model,
               edits: state.layouts[state.selected].edits,
+              manualTransforms: state.layouts[state.selected].manualTransforms,
             }
           : null,
         site: state.site,
@@ -790,6 +851,7 @@ $("#open").onchange = async (e) => {
           p.layoutEdit.model,
           p.layoutEdit.edits,
         );
+        state.layouts[match] = applyFootprints(state.layouts[match], program(), p.layoutEdit.manualTransforms || {});
         state.selected = match;
         state.selectedBuilding =
           state.layouts[match].buildingDetails[0]?.id ?? null;
@@ -947,8 +1009,10 @@ function renderVertices() {
           .join("")
       : "";
 }
+$("#board-boundary").onclick = () => $("#edit-boundary").click();
 $("#edit-boundary").onclick = () => {
   state.mode = state.mode === "vertices" ? "select" : "vertices";
+  $("#board-boundary").textContent = state.mode === "vertices" ? "Done editing corners" : "Drag property corners";
   renderVertices();
   draw();
   message(

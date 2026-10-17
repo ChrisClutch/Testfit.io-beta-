@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --test tests/*.test.js",
-    "test:browser": "node tests/browser.mjs && node tests/propdev-browser.mjs",
+    "test:browser": "node tests/browser.mjs && node tests/propdev-browser.mjs && node tests/direct-edit-browser.mjs",
     "check": "node --check src/main.js && node --check src/engine.js && node --check src/site-input.js"
   },
   "dependencies": {
