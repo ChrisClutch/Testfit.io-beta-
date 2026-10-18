@@ -9,7 +9,7 @@ const page = await browser.newPage({ viewport: { width: 1600, height: 1100 } }),
   errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
 try {
-  await page.goto(process.env.APP_URL || "http://localhost:5173");
+  await page.goto(process.env.APP_URL || "http://localhost:5173?legacy=1");
   await page.locator(".option").first().waitFor();
   assert.equal(await page.title(), "Clutch PropDev.io");
   await page.locator("#type").selectOption("cottage2");

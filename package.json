@@ -1,6 +1,6 @@
 {
   "name": "clutch-propdev",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,8 +8,9 @@
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --test tests/*.test.js",
-    "test:browser": "node tests/browser.mjs && node tests/propdev-browser.mjs && node tests/direct-edit-browser.mjs && node tests/site-editing-browser.mjs",
-    "check": "node --check src/main.js && node --check src/engine.js && node --check src/site-input.js && node --check src/site-editing.js"
+    "test:browser": "node tests/studio-browser.mjs && npm run test:browser:legacy",
+    "check": "node --check src/main.js && node --check src/engine.js && node --check src/site-input.js && node --check src/site-editing.js && node --check src/entry.js && node --check src/studio.js && node --check src/studio-model.js",
+    "test:browser:legacy": "node tests/browser.mjs && node tests/propdev-browser.mjs && node tests/direct-edit-browser.mjs && node tests/site-editing-browser.mjs"
   },
   "dependencies": {
     "@turf/buffer": "7.3.1",

@@ -2,7 +2,7 @@ import {chromium} from 'playwright-core';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox']});const page=await browser.newPage({viewport:{width:1440,height:1100}});let errors=[];page.on('pageerror',e=>errors.push(e.message));
-await page.goto(process.env.APP_URL||'http://localhost:5173/');await page.locator('.option').first().waitFor();assert.equal(await page.locator('.option').count(),4);assert.ok(Number(await page.locator('.big-metric strong').textContent())>0);await page.screenshot({path:'/tmp/clutch-desktop.png',fullPage:true});
+await page.goto(process.env.APP_URL||'http://localhost:5173/?legacy=1');await page.locator('.option').first().waitFor();assert.equal(await page.locator('.option').count(),4);assert.ok(Number(await page.locator('.big-metric strong').textContent())>0);await page.screenshot({path:'/tmp/clutch-desktop.png',fullPage:true});
 // Live growth must affect both geometry and counts, without pressing Generate.
 const fullUnits=Number(await page.locator('.big-metric strong').textContent());
 const fullStalls=await page.locator('.stall').count();assert.ok(fullStalls>0);

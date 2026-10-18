@@ -4,7 +4,7 @@ const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'
 const page=await browser.newPage({viewport:{width:1600,height:1100}}),errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 try {
- await page.goto(process.env.APP_URL||'http://localhost:5173');
+ await page.goto(process.env.APP_URL||'http://localhost:5173?legacy=1');
  await page.locator('.option').first().waitFor();
  await page.locator('#edit-boundary').click();
  assert.equal(await page.locator('.edge-measurement').count(),4);

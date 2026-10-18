@@ -19,7 +19,7 @@ async function dragCenter(locator, dx, dy) {
   await page.mouse.up();
 }
 try {
-  await page.goto("http://localhost:5173");
+  await page.goto(process.env.APP_URL || "http://localhost:5173?legacy=1");
   await page.locator(".option").first().waitFor();
   await page.locator("#type").selectOption("fuel");
   await page.locator('[data-parking="0"] .aisle-label').click();

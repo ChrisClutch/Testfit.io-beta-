@@ -1,5 +1,7 @@
 # Clutch PropDev.io
 
+**Version 0.6 Placement Studio:** independently place, move, rotate and resize homes; draw landscape, ponds and drives; fill irregular available site area with full-size parking spaces. The cottage courtyard is the default example. [Workflow, limitations and validation](docs/PLACEMENT-STUDIO-V06.md). The previous generator remains available at `?legacy=1` with its original saved projects.
+
 **Version 0.3 feature branch:** explicit residential types, net-square-footage-driven footprints, responsive parking, optional detention/green-space reservations, editable boundary vertices and WGS84 parcel import. [Changes and review workflow](docs/PROPDEV-V03.md). [Current validation](docs/VALIDATION-V03.md).
 
 A working browser-based feasibility MVP for Clutch Industries: draw or upload a site, calibrate its scale, trace a property boundary, enter constraints, expand buildings and their connected parking lots, and see live yield. Financial assumptions are optional and collapsed. Local processing; no account, backend, API credentials or paid maps required.
@@ -19,7 +21,7 @@ npm run dev -- --port 5173 --open
 
 The last command opens the app in your browser. Leave Terminal running. For cloud setup, the existing checkout is `/workspace/Testfit.io-beta-`; use `npm ci --cache /tmp/clutch-npm-cache --no-audit --no-fund` there. Cloud onboarding does not provide a web preview. `npm test` runs geometry and financial checks. With system Chromium installed, run `npm run test:browser` while the dev server is running; set `CHROMIUM_PATH` if its executable is elsewhere. `npm run build` produces `dist/`; `npm run preview -- --port 4173` serves it locally. For Cloudflare Pages: build command `npm run build`, output directory `dist`, Node 24. No Worker required for this MVP. Deploy only when explicitly requested.
 
-## Use
+## Use the preserved v0.5 workspace (`?legacy=1`)
 
 1. Start with the 500 × 400 ft demo or upload a PDF (first page), PNG, JPEG or WEBP. Files stay in the browser; there is no upload server. The project JSON embeds the reference image when saved. Handle survey/project files as sensitive documents.
 2. For an uploaded reference, click **Calibrate**, then two endpoints of a known surveyed dimension or reliable scale bar. Enter its distance in feet. Never infer scale from DPI or a screenshot zoom level.
